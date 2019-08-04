@@ -1,8 +1,19 @@
 window.onload = (): void => {
     const container = document.getElementById('container');
     if (container) {
-        const p = document.createElement('p');
-        p.innerHTML = 'hello, world';
-        container.appendChild(p);
+        container.appendChild(createElement(
+            'p',
+            'hello, world',
+            null
+        ));
     }
 };
+
+function createElement(tagName: string, innerHTML: string, child: HTMLProgressElement | null): HTMLElement {
+    const element = document.createElement(tagName);
+    element.innerHTML = innerHTML;
+    if (child) {
+        element.appendChild(child);
+    }
+    return element;
+}
