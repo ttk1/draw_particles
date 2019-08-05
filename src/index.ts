@@ -5,7 +5,7 @@ const RADIUS = 5;
 const MAGNIFICATION = 1;
 const COR = 0.95;
 const COR_WALL = 0.95;
-const NUM_PARTICLES = 1000;
+const NUM_PARTICLES = 700;
 const INTERVAL_MS = 10;
 
 window.onload = (): void => {
@@ -145,6 +145,6 @@ function getParticles(num: number): Particle[] {
 
 function getParticle(): Particle {
     const p: Vec2 = new Vec2(Math.random() * 500, Math.random() * 500);
-    const v: Vec2 = new Vec2((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+    const v: Vec2 = new Vec2((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5);
     return new Particle(p, v);
 }
