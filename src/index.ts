@@ -115,9 +115,9 @@ function collide(a: Particle, b: Particle): void {
     // baベクトルを正規化
     const nba = ba.normalize();
     // 正規化したbaとrvbの内積を出す（rvbのa方向の大きさが出る）
-    const scalar = rvb.dot(nba);
+    const scalar = rvb.dot(nba) * COR;
     // rvbのa方向成分
-    const rvba = nba.scale(scalar).scale(COR);
+    const rvba = nba.scale(scalar);
     // 衝突後の速度の計算
     a.velocity = a.velocity.add(rvba);
     b.velocity = b.velocity.sub(rvba);
