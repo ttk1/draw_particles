@@ -2,7 +2,7 @@ import { Particle } from './particle';
 import { Vec2 } from './vec2';
 
 const RADIUS = 5;
-const MAGNIFICATION = 0.5;
+const MAGNIFICATION = 1;
 const COR = 0.95;
 const COR_WALL = 0.95;
 const NUM_PARTICLES = 1000;
@@ -69,10 +69,13 @@ function step(particles: Particle[], width: number, height: number): void {
                 collisions.push([i, j, dist]);
             }
 
-            // 重力
-            const hoge = 0.05; // 上手く描画するために適当に調整
-            particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
+            // 万有引力の処理を入れるならココに
+            // hogehoge
+
         }
+        // 重力
+        const hoge = 0.5; // 上手く描画するために適当に調整
+        particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
     }
 
     // 距離が近い順にソート
