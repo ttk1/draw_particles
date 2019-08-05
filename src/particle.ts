@@ -8,4 +8,8 @@ export class Particle {
         this.position = position;
         this.velocity = velocity;
     }
+
+    public copy(): Particle {
+        return new Particle(this.position.copy(), this.velocity.copy());
+    }
 }

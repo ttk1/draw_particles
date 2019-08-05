@@ -1,6 +1,9 @@
 import { Particle } from './particle';
 import { Vec2 } from './vec2';
 
+const RADIUS = 5;
+const MAGNIFICATION = 0.5;
+
 window.onload = (): void => {
     const container = document.getElementById('container');
     if (container) {
@@ -9,31 +12,132 @@ window.onload = (): void => {
 };
 
 function main(container: HTMLElement) {
-    container.appendChild(createElement('h1', 'hello, world', null));
-    container.appendChild(createElement('p', dummyText(100), null));
-    const p: Vec2 = new Vec2(0.0, 0.0);
-    const v: Vec2 = new Vec2(0.0, 0.0);
-    const particle = new Particle(p, v);
-}
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+    canvas.width = 500;
+    canvas.height = 500;
 
-function createElement(tagName: string, innerHTML: string, child: HTMLProgressElement | null): HTMLElement {
-    const element = document.createElement(tagName);
-    element.innerHTML = innerHTML;
-    if (child) {
-        element.appendChild(child);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('Context2D取得失敗');
     }
-    return element;
+    const particles = getParticles(100);
+
+    window.setInterval(() => {
+        refresh(ctx, canvas.width, canvas.height);
+        particles.forEach((aparticl) => {
+            draw_particle(aparticl, ctx);
+        });
+        step(particles, canvas.width, canvas.height);
+    }, 10);
 }
 
-function dummyText(length: number): string {
-    let r = '';
-    for (let i = 0; i < length; i++) {
-        r += randomChar();
+function draw_particle(particle: Particle, ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(particle.position.x, particle.position.y, RADIUS, 0, 2 * Math.PI, true);
+    ctx.fill();
+
+    /*
+    ctx.fillStyle = 'black';
+    ctx.fillRect(particle.position.x, particle.position.y, 1, 1);
+    */
+
+    /*
+    const x = Math.floor(particle.position.x * 2) / 2;
+    const y = Math.floor(particle.position.y * 2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 1, y + 1);
+    ctx.stroke();
+    */
+}
+
+function refresh(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    // ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, width, height);
+}
+
+// 相互作用の計算
+function step(particles: Particle[], width: number, height: number): void {
+    /////// 位置の計算 ///////
+
+    for (const particle of particles) {
+        particle.position.x += particle.velocity.x * MAGNIFICATION;
+        particle.position.y += particle.velocity.y * MAGNIFICATION;
     }
-    return r;
+
+    /////// 速度の計算 ///////
+
+    // 衝突をリストアップ
+    const collisions: number[][] = [];
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const dist = distance(particles[i], particles[j]);
+            if (dist <= RADIUS) {
+                collisions.push([i, j, dist]);
+            }
+            // 重力計算をするならここに処理を書く
+            // hogehgoe
+        }
+    }
+
+    // 距離が近い順にソート
+    collisions.sort((a, b) => {
+        return a[2] - b[2];
+    });
+
+    // 距離が近い順に衝突を処理
+    for (const collision of collisions) {
+        const a = particles[collision[0]];
+        const b = particles[collision[1]];
+        collide(a, b);
+    }
+
+    // 壁にぶつかったときの処理
+    for (const particle of particles) {
+        if (particle.position.x < 0 && particle.velocity.x < 0 ||
+            particle.position.x > width && particle.velocity.x > 0) {
+            particle.velocity.x *= -1;
+        }
+        if (particle.position.y < 0 && particle.velocity.y < 0 ||
+            particle.position.y > height && particle.velocity.y > 0) {
+            particle.velocity.y *= -1;
+        }
+    }
 }
 
-function randomChar(): string {
-    return 'a';
+function distance(a: Particle, b: Particle): number {
+    return Math.sqrt((a.position.x - b.position.x) ** 2 + (a.position.y - b.position.y) ** 2);
 }
 
+function collide(a: Particle, b: Particle): void {
+    // aを基準に、bの相対速度を求める
+    const rvb = b.velocity.sub(a.velocity);
+    // baベクトル
+    const ba = b.position.sub(a.position);
+    // baベクトルを正規化
+    const nba = ba.normalize();
+    // 正規化したbaとrvbの内積を出す（rvbのa方向の大きさが出る）
+    const scalar = rvb.dot(nba);
+    // rvbのa方向成分
+    const rvba = nba.scale(scalar);
+    // 衝突後の速度の計算
+    a.velocity = a.velocity.add(rvba);
+    b.velocity = b.velocity.sub(rvba);
+}
+
+function getParticles(num: number): Particle[] {
+    const particles: Particle[] = [];
+    for (let i = 0; i < num; i++) {
+        particles.push(getParticle());
+    }
+    return particles;
+}
+
+function getParticle(): Particle {
+    const p: Vec2 = new Vec2(Math.random() * 500, Math.random() * 500);
+    const v: Vec2 = new Vec2(Math.random() * 10, Math.random() * 10);
+    return new Particle(p, v);
+}
