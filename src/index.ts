@@ -3,6 +3,9 @@ import { Vec2 } from './vec2';
 
 const RADIUS = 5;
 const MAGNIFICATION = 0.5;
+const COR = 0.95;
+const COR_WALL = 0.95;
+const NUM_PARTICLES = 1000;
 
 window.onload = (): void => {
     const container = document.getElementById('container');
@@ -21,7 +24,7 @@ function main(container: HTMLElement) {
     if (!ctx) {
         throw new Error('Context2D取得失敗');
     }
-    const particles = getParticles(100);
+    const particles = getParticles(NUM_PARTICLES);
 
     window.setInterval(() => {
         refresh(ctx, canvas.width, canvas.height);
@@ -99,11 +102,11 @@ function step(particles: Particle[], width: number, height: number): void {
     for (const particle of particles) {
         if (particle.position.x < 0 && particle.velocity.x < 0 ||
             particle.position.x > width && particle.velocity.x > 0) {
-            particle.velocity.x *= -1;
+            particle.velocity.x *= - COR_WALL;
         }
         if (particle.position.y < 0 && particle.velocity.y < 0 ||
             particle.position.y > height && particle.velocity.y > 0) {
-            particle.velocity.y *= -1;
+            particle.velocity.y *= - COR_WALL;
         }
     }
 }
@@ -122,7 +125,7 @@ function collide(a: Particle, b: Particle): void {
     // 正規化したbaとrvbの内積を出す（rvbのa方向の大きさが出る）
     const scalar = rvb.dot(nba);
     // rvbのa方向成分
-    const rvba = nba.scale(scalar);
+    const rvba = nba.scale(scalar).scale(COR);
     // 衝突後の速度の計算
     a.velocity = a.velocity.add(rvba);
     b.velocity = b.velocity.sub(rvba);
@@ -138,6 +141,6 @@ function getParticles(num: number): Particle[] {
 
 function getParticle(): Particle {
     const p: Vec2 = new Vec2(Math.random() * 500, Math.random() * 500);
-    const v: Vec2 = new Vec2(Math.random() * 10, Math.random() * 10);
+    const v: Vec2 = new Vec2((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
     return new Particle(p, v);
 }
