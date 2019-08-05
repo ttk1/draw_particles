@@ -74,8 +74,17 @@ function step(particles: Particle[], width: number, height: number): void {
 
         }
         // 重力
+        const time = Date.now() / 1000;
         const hoge = 0.5; // 上手く描画するために適当に調整
-        particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
+        if (time % 40 < 10) {
+            particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
+        } else if (time % 40 < 20) {
+            particles[i].velocity.x += 9.81 * (INTERVAL_MS / 1000) * hoge;
+        } else if (time % 40 < 30) {
+            particles[i].velocity.y -= 9.81 * (INTERVAL_MS / 1000) * hoge;
+        } else {
+            particles[i].velocity.x -= 9.81 * (INTERVAL_MS / 1000) * hoge;
+        }
     }
 
     // 距離が近い順にソート
