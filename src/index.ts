@@ -110,15 +110,16 @@ function distance(a: Particle, b: Particle): number {
 function collide(a: Particle, b: Particle): void {
     // aを基準に、bの相対速度を求める
     const rvb = b.velocity.sub(a.velocity);
-    // baベクトル
-    const ba = b.position.sub(a.position);
-    // baベクトルを正規化
-    const nba = ba.normalize();
-    // 正規化したbaとrvbの内積を出す（rvbのa方向の大きさが出る）
-    const scalar = rvb.dot(nba) * COR;
+    // abベクトル
+    const ab = b.position.sub(a.position);
+    // abベクトルを正規化
+    const nab = ab.normalize();
+    // 正規化したabとrvbの内積を出す（rvbのa方向の大きさが出る）
+    const scalar = rvb.dot(nab) * COR;
+    // a方向を向いている場合のみ処理（a方向を向いている=scalarが負）
     if (scalar < 0) {
         // rvbのa方向成分
-        const rvba = nba.scale(scalar);
+        const rvba = nab.scale(scalar);
         // 衝突後の速度の計算
         a.velocity = a.velocity.add(rvba);
         b.velocity = b.velocity.sub(rvba);
