@@ -6,6 +6,7 @@ const MAGNIFICATION = 0.5;
 const COR = 0.95;
 const COR_WALL = 0.95;
 const NUM_PARTICLES = 1000;
+const INTERVAL_MS = 10;
 
 window.onload = (): void => {
     const container = document.getElementById('container');
@@ -32,7 +33,7 @@ function main(container: HTMLElement) {
             draw_particle(aparticl, ctx);
         });
         step(particles, canvas.width, canvas.height);
-    }, 10);
+    }, INTERVAL_MS);
 }
 
 function draw_particle(particle: Particle, ctx: CanvasRenderingContext2D): void {
@@ -40,20 +41,6 @@ function draw_particle(particle: Particle, ctx: CanvasRenderingContext2D): void 
     ctx.beginPath();
     ctx.arc(particle.position.x, particle.position.y, RADIUS, 0, 2 * Math.PI, true);
     ctx.fill();
-
-    /*
-    ctx.fillStyle = 'black';
-    ctx.fillRect(particle.position.x, particle.position.y, 1, 1);
-    */
-
-    /*
-    const x = Math.floor(particle.position.x * 2) / 2;
-    const y = Math.floor(particle.position.y * 2) / 2;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 1, y + 1);
-    ctx.stroke();
-    */
 }
 
 function refresh(ctx: CanvasRenderingContext2D, width: number, height: number): void {
@@ -81,8 +68,10 @@ function step(particles: Particle[], width: number, height: number): void {
             if (dist <= RADIUS) {
                 collisions.push([i, j, dist]);
             }
-            // 重力計算をするならここに処理を書く
-            // hogehgoe
+
+            // 重力
+            const hoge = 0.05; // 上手く描画するために適当に調整
+            particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
         }
     }
 
