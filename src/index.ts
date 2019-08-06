@@ -1,61 +1,164 @@
+import TP from 'tweakpane';
 import { Particle } from './particle';
 import { Vec2 } from './vec2';
 
-const RADIUS = 5;
-const MAGNIFICATION = 1;
-const COR = 0.95;
-const COR_WALL = 0.95;
-const NUM_PARTICLES = 700;
-const INTERVAL_MS = 10;
-
-window.onload = (): void => {
-    const container = document.getElementById('container');
-    if (container) {
-        main(container);
-    }
+const PARAMS = {
+    width: 500,
+    height: 500,
+    cor: 0.50,
+    cor_wall: 0.95,
+    interval_ms: 10,
+    magnification: 1,
+    num_particle: 700,
+    radius: 10,
+    gravity: 0.3,
+    gravity_direction: 0
 };
 
-function main(container: HTMLElement) {
-    const canvas = document.createElement('canvas');
-    container.appendChild(canvas);
-    canvas.width = 500;
-    canvas.height = 500;
+let intervalId: number;
+let particles: Particle[];
+let canvas: HTMLCanvasElement;
+let ctx: CanvasRenderingContext2D;
 
-    const ctx = canvas.getContext('2d');
+window.onload = (): void => {
+    initCanvas();
+    initPane();
+    initParticles();
+    intervalId = window.setInterval(animate, PARAMS.interval_ms);
+};
+
+function animate() {
+    refresh();
+    particles.forEach((aparticl) => {
+        draw_particle(aparticl);
+    });
+    step();
+}
+
+function initCanvas(): void {
+    canvas = document.getElementById('canvas') as HTMLCanvasElement;
+    if (!canvas) {
+        throw new Error('Canvas取得失敗');
+    }
+    canvas.width = PARAMS.width;
+    canvas.height = PARAMS.height;
+    ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     if (!ctx) {
         throw new Error('Context2D取得失敗');
     }
-    const particles = getParticles(NUM_PARTICLES);
-
-    window.setInterval(() => {
-        refresh(ctx, canvas.width, canvas.height);
-        particles.forEach((aparticl) => {
-            draw_particle(aparticl, ctx);
-        });
-        step(particles, canvas.width, canvas.height);
-    }, INTERVAL_MS);
 }
 
-function draw_particle(particle: Particle, ctx: CanvasRenderingContext2D): void {
+function initPane(): void {
+    const paneContainer = document.getElementById('pane');
+    if (paneContainer) {
+        paneContainer.style.width = '500px';
+        const Tweakpane = require('tweakpane');
+        const pane = new Tweakpane({
+            container: document.getElementById('pane'),
+        }) as TP;
+
+        // 粒子の半径
+        pane.addInput(PARAMS, 'radius', {
+            min: 1.0,
+            max: 20.0,
+            step: 0.1
+        });
+
+        // アニメーションの間隔
+        pane.addInput(PARAMS, 'interval_ms', {
+            min: 5,
+            max: 100,
+            step: 1
+        }).on('change', () => {
+            window.clearInterval(intervalId);
+            intervalId = window.setInterval(animate, PARAMS.interval_ms);
+        });
+
+        // キャンバスの高さ
+        pane.addInput(PARAMS, 'height', {
+            min: 50,
+            max: 1000,
+            step: 1
+        }).on('change', () => {
+            canvas.height = PARAMS.height;
+        });
+
+        // キャンバスの幅
+        pane.addInput(PARAMS, 'width', {
+            min: 50,
+            max: 1000,
+            step: 1
+        }).on('change', () => {
+            canvas.width = PARAMS.width;
+        });
+
+        // 移動距離の倍率
+        pane.addInput(PARAMS, 'magnification', {
+            min: 0.0,
+            max: 5.0,
+            step: 0.1
+        });
+
+        // 粒子の数
+        pane.addInput(PARAMS, 'num_particle', {
+            min: 0,
+            max: 2000,
+            step: 1
+        }).on('change', () => {
+            initParticles();
+        });
+
+        // 粒子同士の反発係数
+        pane.addInput(PARAMS, 'cor', {
+            min: 0.00,
+            max: 1.00,
+            step: 0.01
+        });
+
+        // 粒子同士の反発係数
+        pane.addInput(PARAMS, 'cor_wall', {
+            min: 0.00,
+            max: 1.00,
+            step: 0.01
+        });
+
+        // 重力
+        pane.addInput(PARAMS, 'gravity', {
+            min: 0.00,
+            max: 1.00,
+            step: 0.01
+        });
+
+        // 重力方向
+        pane.addInput(PARAMS, 'gravity_direction', {
+            min: 0.00,
+            max: 2.00,
+            step: 0.01
+        });
+    }
+    return;
+}
+
+function draw_particle(particle: Particle): void {
     ctx.fillStyle = 'black';
     ctx.beginPath();
-    ctx.arc(particle.position.x, particle.position.y, RADIUS, 0, 2 * Math.PI, true);
+    ctx.arc(particle.position.x, particle.position.y, PARAMS.radius, 0, 2 * Math.PI, true);
     ctx.fill();
 }
 
-function refresh(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+function refresh(): void {
     // ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#eedcb3';
+    ctx.fillRect(0, 0, PARAMS.width, PARAMS.height);
 }
 
 // 相互作用の計算
-function step(particles: Particle[], width: number, height: number): void {
+function step(): void {
     /////// 位置の計算 ///////
 
     for (const particle of particles) {
-        particle.position.x += particle.velocity.x * MAGNIFICATION;
-        particle.position.y += particle.velocity.y * MAGNIFICATION;
+        particle.position.x += particle.velocity.x * PARAMS.magnification;
+        particle.position.y += particle.velocity.y * PARAMS.magnification;
     }
 
     /////// 速度の計算 ///////
@@ -65,7 +168,7 @@ function step(particles: Particle[], width: number, height: number): void {
     for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
             const dist = distance(particles[i], particles[j]);
-            if (dist <= RADIUS) {
+            if (dist <= 2.0 * PARAMS.radius) {
                 collisions.push([i, j, dist]);
             }
 
@@ -74,17 +177,8 @@ function step(particles: Particle[], width: number, height: number): void {
 
         }
         // 重力
-        const time = Date.now() / 1000;
-        const hoge = 0.5; // 上手く描画するために適当に調整
-        if (time % 40 < 10) {
-            particles[i].velocity.y += 9.81 * (INTERVAL_MS / 1000) * hoge;
-        } else if (time % 40 < 20) {
-            particles[i].velocity.x += 9.81 * (INTERVAL_MS / 1000) * hoge;
-        } else if (time % 40 < 30) {
-            particles[i].velocity.y -= 9.81 * (INTERVAL_MS / 1000) * hoge;
-        } else {
-            particles[i].velocity.x -= 9.81 * (INTERVAL_MS / 1000) * hoge;
-        }
+        particles[i].velocity.y += PARAMS.gravity * Math.cos(Math.PI * PARAMS.gravity_direction);
+        particles[i].velocity.x += PARAMS.gravity * Math.sin(Math.PI * PARAMS.gravity_direction);
     }
 
     // 距離が近い順にソート
@@ -101,13 +195,13 @@ function step(particles: Particle[], width: number, height: number): void {
 
     // 壁にぶつかったときの処理
     for (const particle of particles) {
-        if (particle.position.x < 0 && particle.velocity.x < 0 ||
-            particle.position.x > width && particle.velocity.x > 0) {
-            particle.velocity.x *= - COR_WALL;
+        if (particle.position.x < PARAMS.radius && particle.velocity.x < 0 ||
+            particle.position.x > PARAMS.width - PARAMS.radius && particle.velocity.x > 0) {
+            particle.velocity.x *= - PARAMS.cor_wall;
         }
-        if (particle.position.y < 0 && particle.velocity.y < 0 ||
-            particle.position.y > height && particle.velocity.y > 0) {
-            particle.velocity.y *= - COR_WALL;
+        if (particle.position.y < PARAMS.radius && particle.velocity.y < 0 ||
+            particle.position.y > PARAMS.height - PARAMS.radius && particle.velocity.y > 0) {
+            particle.velocity.y *= - PARAMS.cor_wall;
         }
     }
 }
@@ -118,29 +212,28 @@ function distance(a: Particle, b: Particle): number {
 
 function collide(a: Particle, b: Particle): void {
     // aを基準に、bの相対速度を求める
-    const rvb = b.velocity.sub(a.velocity);
+    const rvab = b.velocity.sub(a.velocity);
     // abベクトル
     const ab = b.position.sub(a.position);
     // abベクトルを正規化
     const nab = ab.normalize();
-    // 正規化したabとrvbの内積を出す（rvbのa方向の大きさが出る）
-    const scalar = rvb.dot(nab) * COR;
-    // a方向を向いている場合のみ処理（a方向を向いている=scalarが負）
-    if (scalar < 0) {
-        // rvbのa方向成分
-        const rvba = nab.scale(scalar);
-        // 衝突後の速度の計算
-        a.velocity = a.velocity.add(rvba);
-        b.velocity = b.velocity.sub(rvba);
-    }
+    // 正規化したabとrvbの内積を出す（rvbのa方向の大きさが出る、a方向を向いている=scalarが負）
+    // くっつくの防止で、いい感じの値とminをとる
+    // const scalar =
+    // Math.min(rvab.dot(nab) * PARAMS.cor, - PARAMS.radius * (1 / (2.3 * PARAMS.radius - distance(a, b)) ** 2));
+    const scalar = Math.min(rvab.dot(nab) * PARAMS.cor, - 0.05);
+    // rvbのa方向成分
+    const rvaba = nab.scale(scalar);
+    // 衝突後の速度の計算
+    a.velocity = a.velocity.add(rvaba);
+    b.velocity = b.velocity.sub(rvaba);
 }
 
-function getParticles(num: number): Particle[] {
-    const particles: Particle[] = [];
-    for (let i = 0; i < num; i++) {
+function initParticles(): void {
+    particles = [];
+    for (let i = 0; i < PARAMS.num_particle; i++) {
         particles.push(getParticle());
     }
-    return particles;
 }
 
 function getParticle(): Particle {
