@@ -1,4 +1,18 @@
+## TapiocaMilk
+パーティクルの衝突をシミュレートするコードを書いていたら、タピオカミルクが出来上がりました。
+
+https://tapioca-milk.ttk1.dev/
+
+## 実行方法
+
+```basj
+npm start
+```
+
+## 諸々設定
+
 ### VSCodeワークスペース設定
+
 ```bash
 $ cat *.code-workspace
 {
@@ -25,16 +39,19 @@ npm install --save-dev \
   typescript \
   webpack \
   webpack-cli \
-  webpack-dev-server
+  webpack-dev-server \
+  tweakpane
 ```
 
 ### TypeScript設定
+
 ```bash
 tslint --init
 tsc --init
 ```
 
 ### webpack設定
+
 ```bash
 $ cat webpack.config.js
 const path = require('path');
@@ -44,11 +61,11 @@ module.exports = {
         index: './src/index.ts'
     },
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'docs'),
         filename: 'index.js'
     },
     devServer: {
-        contentBase: 'html',
+        contentBase: 'docs',
         port: 3000
     },
     resolve: {

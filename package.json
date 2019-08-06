@@ -1,5 +1,5 @@
 {
-  "name": "draw_particles",
+  "name": "tapioca-milk",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ttk1/draw_particles.git"
+    "url": "git+https://github.com/ttk1/tapioca-milk.git"
   },
   "author": "tama",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ttk1/draw_particles/issues"
+    "url": "https://github.com/ttk1/tapioca-milk/issues"
   },
-  "homepage": "https://github.com/ttk1/draw_particles#readme",
+  "homepage": "https://github.com/ttk1/tapioca-milk#readme",
   "devDependencies": {
     "ts-loader": "^6.0.4",
     "tslint": "^5.18.0",
