@@ -211,22 +211,11 @@ function distance(a: Particle, b: Particle): number {
 }
 
 function collide(a: Particle, b: Particle): void {
-    // aを基準に、bの相対速度を求める
-    const rvab = b.velocity.sub(a.velocity);
-    // abベクトル
-    const ab = b.position.sub(a.position);
-    // abベクトルを正規化
-    const nab = ab.normalize();
-    // 正規化したabとrvbの内積を出す（rvbのa方向の大きさが出る、a方向を向いている=scalarが負）
-    // くっつくの防止で、いい感じの値とminをとる
-    // const scalar =
-    // Math.min(rvab.dot(nab) * PARAMS.cor, - PARAMS.radius * (1 / (2.3 * PARAMS.radius - distance(a, b)) ** 2));
-    const scalar = Math.min(rvab.dot(nab) * PARAMS.cor, - 0.05);
-    // rvbのa方向成分
-    const rvaba = nab.scale(scalar);
-    // 衝突後の速度の計算
-    a.velocity = a.velocity.add(rvaba);
-    b.velocity = b.velocity.sub(rvaba);
+    const nab = b.position.sub(a.position).normalize();
+    const sa = a.velocity.dot(nab);
+    const sb = b.velocity.dot(nab);
+    a.velocity = a.velocity.sub(nab.scale(sa)).add(nab.scale(Math.min(sb * PARAMS.cor, -0.1)));
+    b.velocity = b.velocity.sub(nab.scale(sb)).add(nab.scale(Math.max(sa * PARAMS.cor, 0.1)));
 }
 
 function initParticles(): void {
