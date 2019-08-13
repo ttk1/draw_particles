@@ -243,7 +243,6 @@ function step(): void {
         } else {
             e[i][PARAMS.num_particle + 3] = 0;
         }
-
         a.acceleration = force.scale(1);
     }
 
