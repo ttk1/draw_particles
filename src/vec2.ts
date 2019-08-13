@@ -34,4 +34,8 @@ export class Vec2 {
     public add(a: Vec2): Vec2 {
         return new Vec2(this.x + a.x, this.y + a.y);
     }
+
+    public length(): number {
+        return Math.sqrt(this.x ** 2 + this.y ** 2);
+    }
 }

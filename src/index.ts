@@ -5,13 +5,15 @@ import { Vec2 } from './vec2';
 const PARAMS = {
     width: 500,
     height: 500,
-    cor: 0.50,
-    cor_wall: 0.95,
-    interval_ms: 10,
+    k: 10.0,
+    h: 5.0,
+    k_wall: 10.0,
+    h_wall: 5.0,
+    interval_ms: 5,
     magnification: 1,
-    num_particle: 700,
+    num_particle: 200,
     radius: 10,
-    gravity: 0.3,
+    gravity: 9.8,
     gravity_direction: 0
 };
 
@@ -108,24 +110,38 @@ function initPane(): void {
             initParticles();
         });
 
-        // 粒子同士の反発係数
-        pane.addInput(PARAMS, 'cor', {
+        // 粒子同士の弾性係数
+        pane.addInput(PARAMS, 'k', {
             min: 0.00,
-            max: 1.00,
-            step: 0.01
+            max: 20.0,
+            step: 0.1
         });
 
-        // 粒子同士の反発係数
-        pane.addInput(PARAMS, 'cor_wall', {
+        // 粒子同士の粘性係数
+        pane.addInput(PARAMS, 'h', {
             min: 0.00,
-            max: 1.00,
-            step: 0.01
+            max: 20.0,
+            step: 0.1
+        });
+
+        // 粒子対壁の弾性係数
+        pane.addInput(PARAMS, 'k_wall', {
+            min: 0.00,
+            max: 20.0,
+            step: 0.1
+        });
+
+        // 粒子対壁の粘性係数
+        pane.addInput(PARAMS, 'h_wall', {
+            min: 0.00,
+            max: 20.0,
+            step: 0.1
         });
 
         // 重力
         pane.addInput(PARAMS, 'gravity', {
             min: 0.00,
-            max: 1.00,
+            max: 10.00,
             step: 0.01
         });
 
@@ -152,57 +168,90 @@ function refresh(): void {
     ctx.fillRect(0, 0, PARAMS.width, PARAMS.height);
 }
 
-// 相互作用の計算
+// 粘性抵抗マトリックス
+const e: number[][] = [];
+
 function step(): void {
-    /////// 位置の計算 ///////
-
-    for (const particle of particles) {
-        particle.position.x += particle.velocity.x * PARAMS.magnification;
-        particle.position.y += particle.velocity.y * PARAMS.magnification;
-    }
-
-    /////// 速度の計算 ///////
-
-    // 衝突をリストアップ
-    const collisions: number[][] = [];
     for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-            const dist = distance(particles[i], particles[j]);
-            if (dist <= 2.0 * PARAMS.radius) {
-                collisions.push([i, j, dist]);
+        let force = new Vec2(0.0, 0.0);
+        const a = particles[i];
+        for (let j = 0; j < particles.length; j++) {
+            const b = particles[j];
+            // 重力加速度
+            force.x += PARAMS.gravity * Math.sin(Math.PI * PARAMS.gravity_direction);
+            force.y += PARAMS.gravity * Math.cos(Math.PI * PARAMS.gravity_direction);
+
+            // 粒子同士の衝突の処理
+            if (i !== j && distance(a, b) < 2 * PARAMS.radius) {
+                // 相対変位増分の計算
+                const rvab = b.velocity.sub(a.velocity);
+                const nab = b.position.sub(a.position).normalize();
+                const u = rvab.dot(nab); // 衝突する向きが負になることに注意
+                // 弾性力
+                e[i][j] += PARAMS.k * u;
+                // 粘性抵抗
+                const d = PARAMS.h * (u / PARAMS.interval_ms);
+                // 合力
+                force = force.add(nab.scale(e[i][j] + d));
+            } else {
+                e[i][j] = 0;
             }
-
-            // 万有引力の処理を入れるならココに
-            // hogehoge
-
         }
-        // 重力
-        particles[i].velocity.y += PARAMS.gravity * Math.cos(Math.PI * PARAMS.gravity_direction);
-        particles[i].velocity.x += PARAMS.gravity * Math.sin(Math.PI * PARAMS.gravity_direction);
+
+        // 壁との衝突の処理
+        // 左側
+        if (a.position.x < PARAMS.radius) {
+            const rvab = a.velocity.scale(-1);
+            const nab = new Vec2(-1, 0);
+            const u = rvab.dot(nab);
+            e[i][PARAMS.num_particle] += PARAMS.k_wall * u;
+            const d = PARAMS.h_wall * (u / PARAMS.interval_ms);
+            force = force.add(nab.scale(e[i][PARAMS.num_particle] + d));
+        } else {
+            e[i][PARAMS.num_particle] = 0;
+        }
+        // 右側
+        if (PARAMS.width - PARAMS.radius < a.position.x) {
+            const rvab = a.velocity.scale(-1);
+            const nab = new Vec2(1, 0);
+            const u = rvab.dot(nab);
+            e[i][PARAMS.num_particle + 1] += PARAMS.k_wall * u;
+            const d = PARAMS.h_wall * (u / PARAMS.interval_ms);
+            force = force.add(nab.scale(e[i][PARAMS.num_particle + 1] + d));
+        } else {
+            e[i][PARAMS.num_particle + 1] = 0;
+        }
+        // 上側
+        if (a.position.y < PARAMS.radius) {
+            const rvab = a.velocity.scale(-1);
+            const nab = new Vec2(0, -1);
+            const u = rvab.dot(nab);
+            e[i][PARAMS.num_particle + 2] += PARAMS.k_wall * u;
+            const d = PARAMS.h_wall * (u / PARAMS.interval_ms);
+            force = force.add(nab.scale(e[i][PARAMS.num_particle + 2] + d));
+        } else {
+            e[i][PARAMS.num_particle + 2] = 0;
+        }
+        // 下側
+        if (PARAMS.height - PARAMS.radius < a.position.y) {
+            const rvab = a.velocity.scale(-1);
+            const nab = new Vec2(0, 1);
+            const u = rvab.dot(nab);
+            e[i][PARAMS.num_particle + 3] += PARAMS.k_wall * u;
+            const d = PARAMS.h_wall * (u / PARAMS.interval_ms);
+            force = force.add(nab.scale(e[i][PARAMS.num_particle + 3] + d));
+        } else {
+            e[i][PARAMS.num_particle + 3] = 0;
+        }
+
+        a.acceleration = force.scale(1);
     }
 
-    // 距離が近い順にソート
-    collisions.sort((a, b) => {
-        return a[2] - b[2];
-    });
-
-    // 距離が近い順に衝突を処理
-    for (const collision of collisions) {
-        const a = particles[collision[0]];
-        const b = particles[collision[1]];
-        collide(a, b);
-    }
-
-    // 壁にぶつかったときの処理
     for (const particle of particles) {
-        if (particle.position.x < PARAMS.radius && particle.velocity.x < 0 ||
-            particle.position.x > PARAMS.width - PARAMS.radius && particle.velocity.x > 0) {
-            particle.velocity.x *= - PARAMS.cor_wall;
-        }
-        if (particle.position.y < PARAMS.radius && particle.velocity.y < 0 ||
-            particle.position.y > PARAMS.height - PARAMS.radius && particle.velocity.y > 0) {
-            particle.velocity.y *= - PARAMS.cor_wall;
-        }
+        /////// 位置の計算 ///////
+        particle.position = particle.position.add(particle.velocity.scale(PARAMS.interval_ms / 1000));
+        /////// 速度の計算 ///////
+        particle.velocity = particle.velocity.add(particle.acceleration.scale(PARAMS.interval_ms / 1000));
     }
 }
 
@@ -210,23 +259,32 @@ function distance(a: Particle, b: Particle): number {
     return Math.sqrt((a.position.x - b.position.x) ** 2 + (a.position.y - b.position.y) ** 2);
 }
 
-function collide(a: Particle, b: Particle): void {
-    const nab = b.position.sub(a.position).normalize();
-    const sa = a.velocity.dot(nab);
-    const sb = b.velocity.dot(nab);
-    a.velocity = a.velocity.sub(nab.scale(sa)).add(nab.scale(Math.min(sb * PARAMS.cor, -0.1)));
-    b.velocity = b.velocity.sub(nab.scale(sb)).add(nab.scale(Math.max(sa * PARAMS.cor, 0.1)));
-}
-
 function initParticles(): void {
     particles = [];
     for (let i = 0; i < PARAMS.num_particle; i++) {
-        particles.push(getParticle());
+        const particle = getParticle();
+        if (particles.filter(
+            (p: Particle) => distance(particle, p) < 2 * PARAMS.radius
+        ).length === 0) {
+            particles.push(particle);
+        }
+    }
+
+    // あとで移動させたいけど、とりあえずここに置いておく
+    for (let i = 0; i < particles.length; i++) {
+        e[i] = [];
+        for (let j = 0; j < particles.length + 4; j++) {
+            e[i][j] = 0;
+        }
     }
 }
 
 function getParticle(): Particle {
-    const p: Vec2 = new Vec2(Math.random() * 500, Math.random() * 500);
-    const v: Vec2 = new Vec2((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5);
-    return new Particle(p, v);
+    const p: Vec2 = new Vec2(
+        Math.random() * (PARAMS.width - PARAMS.radius),
+        Math.random() * (PARAMS.height - PARAMS.radius)
+    );
+    const v: Vec2 = new Vec2((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100);
+    const a: Vec2 = new Vec2(0.0, 0.0);
+    return new Particle(p, v, a);
 }
