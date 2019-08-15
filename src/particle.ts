@@ -10,4 +10,8 @@ export class Particle {
         this.velocity = velocity;
         this.acceleration = acceleration;
     }
+
+    public distance(a: Particle): number {
+        return this.position.sub(a.position).length();
+    }
 }
